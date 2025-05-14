@@ -3,13 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEBUG = os.environ.get("DEBUG", "True").lower == "true"
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-if not DEBUG:
-    DATABASE_URL = os.environ.get("DATABASE_URL")
-else:
-    DATABASE_URL = "sqlite:///test.db"
+DB_URL = "sqlite+aiosqlite:///test.db" if DEBUG else os.environ.get("DB_URL")
 
 TLL_DEFAULT = int(os.environ.get("TLL_DEFAULT", "30"))
-
-
