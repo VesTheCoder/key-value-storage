@@ -1,15 +1,18 @@
+from sqlalchemy import select, delete
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.executors.asyncio import AsyncIOExecutor
 from datetime import datetime
+from aiohttp.web import Application
+from typing import Dict
 
-from sqlalchemy import select, delete
 from models import KeyValue
 from setup_db import scheduler_db_call
 
-executors = {'default': AsyncIOExecutor()}
-delete_record_timer = AsyncIOScheduler(executors=executors)
 
-async def start_scheduler(app):
+executors: Dict[str, AsyncIOExecutor] = {'default': AsyncIOExecutor()}
+delete_record_timer: AsyncIOScheduler = AsyncIOScheduler(executors=executors)
+
+async def start_scheduler(app: Application) -> None:
     """
     Starts the scheduler with the server startup.
     1. Checks for expired keys in the key-value storage and deletes those.
@@ -20,9 +23,9 @@ async def start_scheduler(app):
     if not delete_record_timer.running:
         delete_record_timer.start()
 
-async def delete_on_tll_timeout(key):
+async def delete_on_tll_timeout(key: str) -> None:
     """
-    Delete a single record on its TTL expiration
+    Deletes a single record on its TTL expiration.
     """
     async for db in scheduler_db_call():
         record = await db.execute(select(KeyValue).where(KeyValue.key == key))
@@ -32,9 +35,9 @@ async def delete_on_tll_timeout(key):
             await db.commit()
     return None
 
-async def delete_expired_records():
+async def delete_expired_records() -> None:
     """
-    Delete all expired records on server startup
+    Deletes all expired records on server startup.
     """
     async for db in scheduler_db_call():
         await db.execute(delete(KeyValue).where(KeyValue.expiration_time <= datetime.now()))
