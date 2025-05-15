@@ -1,5 +1,5 @@
 from aiohttp import web
-from setup_db import engine, Base, client_db_call
+from setup_db import client_db_call
 from models import KeyValue
 from sqlalchemy import select
 from datetime import datetime, timedelta
@@ -11,19 +11,6 @@ import json
 routes = web.RouteTableDef()
 
 
-@routes.get("/")
-async def init_db(request):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    return web.Response(text="Database created, yey!")
-
-@routes.get("/add_instance")
-async def add_instance(request):
-    async for db in client_db_call():
-        dbinstance = KeyValue(key="key1", value="test_value", expiration_time=None)
-        db.add(dbinstance)
-        await db.commit()
-    return web.json_response({"status": "Database entry created"})
 
 @routes.delete("/{key}")
 async def delete_record(request):
@@ -71,7 +58,6 @@ async def add_record(request):
 
     try:
         body = await request.json()
-        print(body)
     except json.JSONDecodeError:
         return web.json_response({"status": "Error", 
                                   "message": "JSON Body is invalid. No changes were made"}, 
@@ -114,3 +100,65 @@ async def add_record(request):
             return web.json_response({"status": "Sucess",
                                       "message": f"Record with the key '{key}' was made successfully"}, 
                                       status=200)
+
+
+@routes.put("/bulk")
+async def bulk_operation(request):
+    try:
+        body = await request.json()
+    except json.JSONDecodeError:
+        return web.json_response({"status": "Error", 
+                                  "message": "JSON Body is invalid. No changes were made"}, 
+                                  status=400)
+    
+    if not isinstance(body, list):
+        return web.json_response({"status": "Error", 
+                                  "message": "JSON Body must be a List. No changes were made"}, 
+                                  status=400)
+
+    valid_operations = []
+
+    for operation in body:
+        if not isinstance(operation, dict):
+            return web.json_response({"status": "Error", 
+                                      "message": "JSON Body is wrong format. No changes were made"}, 
+                                      status=400)
+        
+        method: str | None = operation.get("method")
+        if not method:
+            return web.json_response({"status": "Error", 
+                                      "message": "JSON Body lacks a 'method'. No changes were made"}, 
+                                      status=400)
+        
+        method = method.upper()
+        if method not in ("GET", "PUT", "DELETE"):
+            return web.json_response({"status": "Error", 
+                                      "message": "JSON Body 'method' is incorrect. No changes were made"}, 
+                                      status=400)
+
+        key: str| None = operation.get("key")
+        if not key:
+            return web.json_response({"status": "Error", 
+                                      "message": "JSON Body 'key' is incorrect. No changes were made"}, 
+                                      status=400)
+        
+        if method == "PUT":
+            value: str | None = operation.get("value")
+            if not value:
+                return web.json_response({"status": "Error", 
+                                          "message": "JSON Body 'value' is invalid (method PUT). No changes were made"}, 
+                                          status=400)
+
+            tll: str | None = operation.get("tll")
+            if tll:
+                try:
+                    tll = int(tll)
+                except (NameError, ValueError, TypeError):    
+                    return web.json_response({"status": "Error",
+                                              "message": "JSON Body 'tll' is invalid (method PUT). No changes were made"}, 
+                                              status=400)
+            valid_operations.append({"method": method, "key": key, "value": value, "tll": tll})
+        else:
+            valid_operations.append({"method": method, "key": key})
+
+# body = [{"method": "put", "key": "key1", "value": "please work", "tll": "1"}, {"method": "delete", "key": "key1"}]
