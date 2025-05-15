@@ -7,8 +7,9 @@ from settings import TLL_DEFAULT
 from scheduler import delete_record_timer, delete_on_tll_timeout
 import json
 
-
 routes = web.RouteTableDef()
+
+
 
 
 
@@ -30,7 +31,11 @@ async def delete_record(request):
             return web.json_response({"status": "Error", 
                                       "message": f"Record with the key '{key}' not found"}, 
                                       status=404)
-        
+
+
+
+
+
 @routes.get("/{key}")
 async def get_record(request):
     key = request.match_info.get("key")
@@ -51,6 +56,10 @@ async def get_record(request):
         return web.json_response({"status": "Error", 
                                   "message": f"Record with the key '{key}' not found"}, 
                                   status=404)
+
+
+
+
 
 @routes.put("/{key}")
 async def add_record(request):
@@ -102,6 +111,9 @@ async def add_record(request):
                                       status=200)
 
 
+
+
+
 @routes.put("/bulk")
 async def bulk_operation(request):
     try:
@@ -117,6 +129,7 @@ async def bulk_operation(request):
                                   status=400)
 
     valid_operations = []
+
 
     for operation in body:
         if not isinstance(operation, dict):
@@ -161,4 +174,66 @@ async def bulk_operation(request):
         else:
             valid_operations.append({"method": method, "key": key})
 
-# body = [{"method": "put", "key": "key1", "value": "please work", "tll": "1"}, {"method": "delete", "key": "key1"}]
+
+    async for db in client_db_call():
+            errors = []
+            tll_timers = []
+            successfull_results = []
+            
+            for operation in valid_operations:
+                    method = operation["method"]
+                    key = operation["key"]
+
+                    if method == "GET":
+                        record = await db.execute(select(KeyValue).where(KeyValue.key == key))
+                        record_found = record.scalar_one_or_none()
+                        if not record_found:
+                            errors.append(f"Record with the key '{key}' does not exists")
+                        elif record_found.expiration_time and record_found.expiration_time < datetime.now():
+                            await db.delete(record_found)
+                            errors.append(f"Record with the key '{key}' has expired")
+                        else:
+                            successfull_results.append({"key": key, "value": record_found.value})
+                            
+                    elif method == "DELETE":
+                        record = await db.execute(select(KeyValue).where(KeyValue.key == key))
+                        record_found = record.scalar_one_or_none()
+
+                        if not record_found:
+                            errors.append({"key": key, "result": f"Record with the key '{key}' does not exists"})
+                        else:    
+                            await db.delete(record_found)
+                            successfull_results.append({"key": key, "result": "deleted successfully"})
+
+                    elif method == "PUT":
+                        record = await db.execute(select(KeyValue).where(KeyValue.key == key))
+                        record_found = record.scalar_one_or_none()
+
+                        if record_found:
+                            errors.append({"key": key, 
+                                           "result": f"Record with the key '{key}' already exists and can not be modified"})
+                        else:
+                            tll = operation.get("tll")
+                            if not tll:
+                                tll = TLL_DEFAULT
+                            expiration_time = datetime.now() + timedelta(minutes=tll)
+
+                            record = KeyValue(key=key, value=value, expiration_time=expiration_time)
+                            db.add(record)
+                            tll_timers.append((expiration_time, key))
+                            successfull_results.append({"key": key, "result": "added successfully"})
+                        
+            if errors:
+                    await db.rollback()
+                    return web.json_response({"status": "Error",
+                                              "message": "Not all operations were correct. No changes were made.",
+                                              "details": errors}, 
+                                              status=400)   
+            else:
+                    await db.commit()
+                    for expiration_time, key in tll_timers:
+                        delete_record_timer.add_job(delete_on_tll_timeout, 'date', run_date=expiration_time, args=[key])
+                    return web.json_response({"status": "Success",
+                                              "message": "All operations completed. Changes saved.",
+                                              "details": successfull_results},
+                                              status=200)     
