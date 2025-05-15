@@ -3,7 +3,7 @@
 ## DISCLAMER
 
 - This project was made 98% manually. No LLM functional code, no autocomplete
-- The whole process of me working on the project on record you can find here: (youtube link)
+- The whole process of me working on the project on record you can find here: (youtube link would be here when I'll edit the video - 30 hours recorded).
 - What was written by LLM: docstrings, data type hints, this readme file, Dockerfiles. Every string was carefully checked manually.
 - To easily start the project, you can use the docker-compose.yml, that is located in the main directory.
 
