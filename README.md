@@ -2,10 +2,9 @@
 
 ## DISCLAMER
 
-**This project was made 98% manually. No LLM functional code, no autocomplete.**
-**The whole process of me working on the project on record you can find here:**
-**(youtube link)**
-What was written by LLM: docstrings, data type hints, this readme file. Every string was carefully checked manually.
+- [This project was made 98% manually. No LLM functional code, no autocomplete]
+- [The whole process of me working on the project on record you can find here: (youtube link)]
+- [What was written by LLM: docstrings, data type hints, this readme file. Every string was carefully checked manually]
 
 ## Table of Contents
 
