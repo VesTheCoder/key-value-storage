@@ -30,7 +30,7 @@ async def delete_record(request: web.Request) -> web.Response:
         if record_found:
             await db.delete(record_found)
             await db.commit()
-            return web.json_response({"status": "Sucess",
+            return web.json_response({"status": "Success",
                                       "message": f"Record with the key '{key}' deleted"},
                                       status=200)
         else:
@@ -122,7 +122,7 @@ async def add_record(request: web.Request) -> web.Response:
 
             delete_record_timer.add_job(delete_on_tll_timeout, 'date', run_date=expiration_time, args=[key])
 
-            return web.json_response({"status": "Sucess",
+            return web.json_response({"status": "Success",
                                       "message": f"Record with the key '{key}' was made successfully"},
                                       status=200)
 

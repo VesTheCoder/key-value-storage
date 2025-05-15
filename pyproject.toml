@@ -1,7 +1,7 @@
 [project]
 name = "key-value-storage"
 version = "0.1.0"
-description = "Add your description here"
+description = "Made by Ves, the Coder"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -12,6 +12,8 @@ dependencies = [
     "asyncpg>=0.30.0",
     "mypy>=1.15.0",
     "pytest>=8.3.5",
+    "pytest-aiohttp>=1.1.0",
+    "pytest-asyncio>=0.26.0",
     "python-dotenv>=1.1.0",
     "sqlalchemy>=2.0.40",
 ]

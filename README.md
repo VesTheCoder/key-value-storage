@@ -4,7 +4,8 @@
 
 - This project was made 98% manually. No LLM functional code, no autocomplete
 - The whole process of me working on the project on record you can find here: (youtube link)
-- What was written by LLM: docstrings, data type hints, this readme file. Every string was carefully checked manually
+- What was written by LLM: docstrings, data type hints, this readme file, Dockerfiles. Every string was carefully checked manually.
+- To easily start the project, you can use the docker-compose.yml, that is located in the main directory.
 
 ## Table of Contents
 
@@ -24,7 +25,7 @@ It can be started on multiple servers to comunicate with one DB - distributed se
 ## API Handlers
 
 For testing purposes feel free to use Postman, or any other instrument/way of your choice.
-The service exposes the following HTTP handlers:
+The service has the following HTTP handlers:
 
 ### DELETE /{key}
 
