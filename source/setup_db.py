@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from typing import AsyncIterator
+from aiohttp.web import Application
 
 from settings import DB_URL
 
@@ -17,6 +18,13 @@ class Base(DeclarativeBase):
     """
     pass
 
+async def init_database(app: Application) -> None:
+    """
+    Initializes the database tables if they don't exist already.
+    """
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    return None
 
 async def client_db_call() -> AsyncIterator[AsyncSession]:
     """
