@@ -124,7 +124,7 @@ async def add_record(request: web.Request) -> web.Response:
 
             return web.json_response({"status": "Success",
                                       "message": f"Record with the key '{key}' was made successfully"},
-                                      status=200)
+                                      status=200) 
 
 
 
@@ -148,8 +148,6 @@ async def bulk_operation(request: web.Request) -> web.Response:
         return web.json_response({"status": "Error",
                                   "message": "JSON Body must be a List. No changes were made"},
                                   status=400)
-
-    valid_operations: List[Dict[str, Any]] = []
 
 
     for operation in body:
@@ -178,7 +176,7 @@ async def bulk_operation(request: web.Request) -> web.Response:
 
         if method == "PUT":
             value: Optional[Any] = operation.get("value")
-            if not value:
+            if "value" not in operation:
                 return web.json_response({"status": "Error",
                                           "message": "JSON Body 'value' is invalid (method PUT). No changes were made"},
                                           status=400)
@@ -186,14 +184,11 @@ async def bulk_operation(request: web.Request) -> web.Response:
             tll: Optional[Union[str, int]] = operation.get("tll")
             if tll:
                 try:
-                    tll = int(tll)
+                    int(tll)
                 except (NameError, ValueError, TypeError):    
                     return web.json_response({"status": "Error",
                                               "message": "JSON Body 'tll' is invalid (method PUT). No changes were made"},
                                               status=400)
-            valid_operations.append({"method": method, "key": key, "value": value, "tll": tll})
-        else:
-            valid_operations.append({"method": method, "key": key})
 
 
     async for db in client_db_call():
@@ -201,8 +196,8 @@ async def bulk_operation(request: web.Request) -> web.Response:
             tll_timers: List[tuple[datetime, str]] = []
             successfull_results: List[Dict[str, Any]] = []
 
-            for operation in valid_operations:
-                    method: str = operation["method"]
+            for operation in body:
+                    method: str = operation["method"].upper()
                     key: str = operation["key"]
 
                     if method == "GET":
@@ -212,11 +207,12 @@ async def bulk_operation(request: web.Request) -> web.Response:
                             errors.append({"key": key, "result": f"Record with the key '{key}' does not exists"})
                         elif record_found.expiration_time and record_found.expiration_time < datetime.now():
                             await db.delete(record_found)
+                            await db.flush()
                             errors.append({"key": key, "result": f"Record with the key '{key}' has expired"})
                         else:
                             successfull_results.append({"key": key, "value": record_found.value})
 
-                    if method == "DELETE":
+                    elif method == "DELETE":
                         record = await db.execute(select(KeyValue).where(KeyValue.key == key))
                         record_found: Optional[KeyValue] = record.scalar_one_or_none()
 
@@ -226,7 +222,7 @@ async def bulk_operation(request: web.Request) -> web.Response:
                             await db.delete(record_found)
                             successfull_results.append({"key": key, "result": "deleted successfully"})
 
-                    if method == "PUT":
+                    elif method == "PUT":
                         record = await db.execute(select(KeyValue).where(KeyValue.key == key))
                         record_found: Optional[KeyValue] = record.scalar_one_or_none()
 
@@ -237,7 +233,7 @@ async def bulk_operation(request: web.Request) -> web.Response:
                             tll: Optional[int]  = operation.get("tll")
                             if not tll:
                                 tll: Optional[int] = TLL_DEFAULT
-                            expiration_time = datetime.now() + timedelta(minutes=tll)
+                            expiration_time = datetime.now() + timedelta(minutes=int(tll))
 
                             record = KeyValue(key=key, value=value, expiration_time=expiration_time)
                             db.add(record)

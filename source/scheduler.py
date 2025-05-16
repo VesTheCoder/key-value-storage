@@ -42,3 +42,4 @@ async def delete_expired_records() -> None:
     async for db in scheduler_db_call():
         await db.execute(delete(KeyValue).where(KeyValue.expiration_time <= datetime.now()))
         await db.commit()
+    return None
