@@ -258,3 +258,13 @@ async def bulk_operation(request: web.Request) -> web.Response:
                                               "message": "All operations completed. Changes saved.",
                                               "details": successfull_results},
                                               status=200)     
+
+
+
+
+
+@routes.get("/")
+async def start_message(request):
+    return web.json_response({"status": "We're good!", 
+                              "message": "Yes, everything works. You can go try the API now"}, 
+                              status=200)

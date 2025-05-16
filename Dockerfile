@@ -11,7 +11,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy source code
 COPY ./source ./source
-COPY ./test.db ./
 
 # Expose port
 EXPOSE 6969
@@ -23,4 +22,4 @@ ENV DEBUG=True
 ENV DB_URL=sqlite+aiosqlite:///test.db
 
 # Run the server
-CMD ["python", "-m", "source.main"]
+CMD ["python", "source/main.py"]

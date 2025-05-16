@@ -15,8 +15,6 @@ services:
       - DEBUG=True
       - DB_URL=sqlite+aiosqlite:///test.db
       - TLL_DEFAULT=30
-    volumes:
-      - ./test.db:/app/test.db
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6969"]
       interval: 30s
@@ -24,6 +22,7 @@ services:
       retries: 3
       start_period: 5s
     restart: unless-stopped
+
 
   # Mock Client for Testing
   mock-client:
