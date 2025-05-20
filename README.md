@@ -3,7 +3,7 @@
 ## DISCLAMER
 
 - This project was made 98% manually. No LLM functional code, no autocomplete
-- The whole process of me working on the project on record you can find here: (youtube link would be here when I'll edit the video - 30 hours recorded).
+- The whole process of me working on the project on record you can find here: https://www.youtube.com/watch?v=AkEbSdQeCBw
 - What was written by LLM: docstrings, data type hints, this readme file, Dockerfiles. Every string was carefully checked manually.
 - To easily start the project, you can use the docker-compose.yml, that is located in the main directory. For manual start install the dependincies and then just run the main.py file.
 
@@ -60,7 +60,7 @@ curl -X DELETE http://localhost:6969/mykey
 
 ### GET /{key}
 
-Retrieves the value of a key-value record based on the provided key. If the record has expired based on its TTL, it will be deleted and not returned.
+Retrieves the value of a key-value record based on the provided key. Has additional layer of defence - if the record has expired based on its TTL, but for some unknown reason still exists, it will be deleted and not returned.
 
 **Method:** `GET`
 **Endpoint:** `/{key}` (where `{key}` is the key to retrieve)
@@ -91,10 +91,10 @@ curl http://localhost:6969/mykey
 
 ### PUT /{key}
 
-Adds a new key-value record or updates an existing one with an optional Time-To-Live (TTL). If a record with the key already exists, the operation will fail as records cannot be modified, only added or deleted.
+Adds a new key-value record with an optional Time-To-Live (TTL). If 'tll' is not in the request, the app would automatically use a default TLL time. If a record with the key already exists, the operation will fail as records cannot be modified, only added or deleted.
 
 **Method:** `PUT`
-**Endpoint:** `/{key}` (where `{key}` is the key to add or update)
+**Endpoint:** `/{key}` (where `{key}` is the key to add)
 **Request Body:** JSON object with a `value` field and an optional `tll` field.
 
 **Request Body Schema:**
@@ -102,7 +102,7 @@ Adds a new key-value record or updates an existing one with an optional Time-To-
 ```json
 {
   "value": "<any_value>",
-  "tll": <optional_integer_minutes>
+  "tll": "<optional_integer_compatible_value_minutes>"
 }
 ```
 
@@ -111,7 +111,7 @@ Adds a new key-value record or updates an existing one with an optional Time-To-
 ```bash
 curl -X PUT http://localhost:6969/anotherkey \
 -H "Content-Type: application/json" \
--d '{"value": "anothervalue", "tll": 5}'
+-d '{"value": "anothervalue", "tll": "5"}'
 ```
 
 **Example Request (without TTL - uses default):**
@@ -162,10 +162,10 @@ Performs multiple GET, PUT, or DELETE operations in a single request. The operat
 ```json
 [
   {
-    "method": "GET" | "PUT" | "DELETE",
+    "method": "get" | "put" | "delete",
     "key": "<string_key>",
     "value": "<any_value>",   // Required for PUT method
-    "tll": <optional_integer_minutes> // Optional for PUT method
+    "tll": "<optional_integer_compatible_value_minutes>" // Optional for PUT method
   },
   // ... more operations
 ]
@@ -177,9 +177,9 @@ Performs multiple GET, PUT, or DELETE operations in a single request. The operat
 curl -X PUT http://localhost:6969/bulk \
 -H "Content-Type: application/json" \
 -d '[
-  {"method": "PUT", "key": "bulk_key1", "value": "bulk_value1", "tll": 2},
-  {"method": "GET", "key": "bulk_key1"},
-  {"method": "DELETE", "key": "bulk_key2"}
+  {"method": "put", "key": "bulk_key1", "value": "bulk_value1", "tll": "2"},
+  {"method": "get", "key": "bulk_key1"},
+  {"method": "delete", "key": "bulk_key2"}
 ]'
 ```
 
